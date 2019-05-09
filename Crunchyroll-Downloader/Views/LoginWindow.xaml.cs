@@ -42,7 +42,6 @@ namespace CrunchyrollDownloader.Views
 
 			_otherVm.UpdateLogin();
 			Close();
-			
 		}
 	}
 

@@ -8,27 +8,74 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Media.Imaging;
 using CrunchyrollDownloader.Models;
 using CrunchyrollDownloader.Progress;
 using CrunchyrollDownloader.Views;
 using Newtonsoft.Json;
+using Series;
 using static System.Globalization.CultureInfo;
 using static CrunchyrollDownloader.Quality;
 
 namespace CrunchyrollDownloader.ViewModels
 {
-	public class MainWindowViewModel : ViewModelBase<DownloaderModel>
+    public class Anime
+    {
+        public string Title { get; set; }
+        public long? Id { get; set; }
+        public BitmapImage ProfileImage { get; set; }
+        public string SourceUrl { get; set; }
+        public string Description { get; set; }
+    }
+
+    public class MainWindowViewModel : ViewModelBase<DownloaderModel>
 	{
-		public MainWindowViewModel() : this(null)
+        private readonly Crunchyroll crunchyroll = new Crunchyroll();
+        public series animeSeries;
+        public List<Anime> animeSeriesList { get; }
+
+        public MainWindowViewModel(DownloaderModel model = null) : base(model)
+        {
+            this.animeSeriesList = new List<Anime>();
+
+            if (HasLogin)
+            {
+                var loginInfo = getLoginInfo();
+                crunchyroll.Login(loginInfo.Item1, loginInfo.Item2);
+                animeSeries = crunchyroll.listSeries(SerieTipo.anime, FiltroTipo.newest);
+                if (!animeSeries._error)
+                {
+                    var data = animeSeries.data;
+                    this.animeSeriesList.AddRange(
+                        data.Select(x => new Anime
+                        {
+                            Title        = x.name,
+                            Id           = x.series_id,
+                            SourceUrl    = x.url,
+                            Description  = x.description,
+                            ProfileImage = new BitmapImage(new Uri(x.portrait_image.thumb_url))
+                        })
+                    );
+                }
+            }
+        }
+
+        public MainWindowViewModel() : this(null)
 		{
+        }
 
-		}
+        public Tuple<string, string> getLoginInfo()
+        {
+            var loginJson       = File.ReadAllText(@"C:\ProgramData\Crunchy-DL\login.json");
+            dynamic loginIdents = JsonConvert.DeserializeObject(loginJson);
+            return Tuple.Create((string) loginIdents.username, (string) loginIdents.password);
+        }
 
-		public MainWindowViewModel(DownloaderModel model = null) : base(model)
-		{
-		}
 
-		public string DlStatus
+
+        public string DlStatus
 		{
 			get => Model.DlStatus;
 			set => SetModelProperty(value);
@@ -81,6 +128,7 @@ namespace CrunchyrollDownloader.ViewModels
 			get => Model.Url;
 			set => SetModelProperty(value);
 		}
+
 		private int _selectedQualityItemIndex = 0;
 
 		public int SelectedQualityItemIndex
@@ -139,6 +187,7 @@ namespace CrunchyrollDownloader.ViewModels
 			OnPropertyChanged(nameof(HasLogin));
 			OnPropertyChanged(nameof(HasNoLogin));
 		}
+
 		public async Task Download()
 		{
 			var process = GetYoutubeDlProcessWithArguments();
@@ -212,10 +261,9 @@ namespace CrunchyrollDownloader.ViewModels
 
 		private Process GetYoutubeDlProcessWithArguments()
 		{
-			var loginJson = File.ReadAllText(@"C:\ProgramData\Crunchy-DL\login.json");
-			dynamic loginIdents = JsonConvert.DeserializeObject(loginJson);
-			string username = loginIdents.username;
-			string password = loginIdents.password;
+            var loginInfo = getLoginInfo();
+            string username = loginInfo.Item1;
+			string password = loginInfo.Item2;
 
 			var currentSavePath = SavePath;
 			currentSavePath += @"\%(title)s.%(ext)s";

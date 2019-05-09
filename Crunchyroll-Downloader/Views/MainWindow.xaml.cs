@@ -1,23 +1,30 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Windows;
 using System.Windows.Forms;
 using CrunchyrollDownloader.ViewModels;
+using MahApps.Metro.Controls;
 using MessageBox = System.Windows.MessageBox;
+using CrunchyrollAPI;
+using Newtonsoft.Json;
 
 namespace CrunchyrollDownloader.Views
 {
-	/// <summary>
-	/// Interaction logic for MainWindow.xaml
-	/// </summary>
-	public partial class MainWindow : Window
-	{
-		private readonly MainWindowViewModel _vm;
-		public MainWindow()
+    /// <summary>
+    /// Interaction logic for MainWindow.xaml
+    /// </summary>
+    public partial class MainWindow : MetroWindow
+    {
+        private readonly MainWindowViewModel _vm;
+
+        public MainWindow()
 		{
 			DataContext = _vm = new MainWindowViewModel();
 			InitializeComponent();
-		}
+        }
 
 		private void SaveButtonClick(object sender, RoutedEventArgs e)
 		{
@@ -81,12 +88,17 @@ namespace CrunchyrollDownloader.Views
 		{
 			var loginWindow = new LoginWindow(_vm) { Owner = this };
 			loginWindow.ShowDialog();
-		}
+        }
 
 		private void LogoutButtonClick(object sender, RoutedEventArgs e)
 		{
 			File.Delete(@"C:\ProgramData\Crunchy-DL\login.json");
 			_vm.UpdateLogin();
 		}
-	}
+
+        private void AnimeFilter_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+        {
+
+        }
+    }
 }
